@@ -52,7 +52,7 @@ void loop()
 
   else
   {
-    Serial.println("HATA!!!!");
+    Serial.println("Error!!!!");
   }
   
 
