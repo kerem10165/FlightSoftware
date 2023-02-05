@@ -4,7 +4,7 @@
 #define RECEIVER_H
 
 #include <PulsePosition.h>
-
+#include "Imu/ImuDefinitions.h"
 
 
 struct ReceiverInput
@@ -22,7 +22,9 @@ struct Receiver
     Receiver(int pin);
     
     ReceiverInput* getCommand();
-
+    RPY scaleRollPitchYawCommand(const RPY& maxValues);
+    void printReceiver();
+    
     static ReceiverInput m_inputs;
     static int m_pin;
     static unsigned long lastReadTime;

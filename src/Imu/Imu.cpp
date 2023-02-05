@@ -58,10 +58,10 @@ void Imu::initilaizeImu()
 
     if (m_mpu6050.testConnection() == false) 
     {
-    while(1) 
-    {
-        Serial.println("MPU6050 initialization unsuccessful");
-    }
+        while(1) 
+        {
+            Serial.println("MPU6050 initialization unsuccessful");
+        }
     }
 
     m_mpu6050.setFullScaleGyroRange(GYRO_SCALE);

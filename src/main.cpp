@@ -2,10 +2,13 @@
 #include <Servo.h>
 #include <Imu/Imu.h>
 #include <Receiver/Receiver.h>
+#include <Pid/Pid.h>
 
 
 float dt;
 unsigned long current_time, prev_time;
+
+RPY maxValues{30.f,30.f,180.};
 
 Imu* imu;
 Receiver * receiver;
@@ -25,10 +28,9 @@ void setup() {
   Serial.begin(9600);
 
   receiver = new Receiver{23};
+  imu = new Imu;
 
-  /*imu = new Imu;
-
-  imu->printImuError();*/
+  imu->printImuError();
 }
 
 
@@ -38,16 +40,14 @@ void loop()
   current_time = micros();      
   dt = (current_time - prev_time)/1000000.0;
 
-  /*const auto& accelAndGyro = imu->getImuData();
+  const auto& accelAndGyro = imu->getImuData();
 
-  const auto& rollPitchYaw = imu->getRollPitchYaw(accelAndGyro , dt);*/
+  const auto& rollPitchYaw = imu->getRollPitchYaw(accelAndGyro , dt);
 
-  auto input = receiver->getCommand();
-
-  if(input)
+  if(auto input = receiver->getCommand())
   {
-    Serial.printf("roll : %f , pitch : %f , yaw : %f , throttle : %f , switch1 : %f , switch2 : %f\n"
-    ,input->roll, input->pitch , input->yaw , input->throttle , input->switch1 , input->switch2);
+    auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
+    Serial.printf("roll : %f , pitch : %f , yaw : %f\n" , scaledRollPitchYawInput.roll , scaledRollPitchYawInput.pitch , scaledRollPitchYawInput.yaw);
   }
 
   else

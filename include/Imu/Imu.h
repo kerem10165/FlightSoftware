@@ -8,24 +8,6 @@
 #include <Wire.h>
 #include "MPU6050.h"
 
-
-struct ImuData
-{
-    float AccX = 0.f;
-    float AccY = 0.f;
-    float AccZ = 0.f;
-    float GyroX = 0.f;
-    float GyroY= 0.f;
-    float GyroZ = 0.f;
-};
-
-struct RPY
-{
-    float roll = 0.f;
-    float pitch = 0.f;
-    float yaw = 0.f; 
-};
-
 void printImuData(const ImuData& x);
 void printImuData(const RPY& x);
 

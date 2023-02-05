@@ -52,3 +52,17 @@ ReceiverInput* Receiver::getCommand()
 
     return &m_inputs;
 }
+
+RPY Receiver::scaleRollPitchYawCommand(const RPY& maxValues)
+{
+    return 
+        {   map(m_inputs.roll , 990 , 2010 , -maxValues.roll , maxValues.roll),
+            -map(m_inputs.pitch , 990 , 2010 , -maxValues.pitch , maxValues.pitch),
+            map(m_inputs.yaw , 990 , 2010 , -maxValues.yaw , maxValues.yaw)  };
+}
+
+void Receiver::printReceiver()
+{
+    Serial.printf("roll : %f , pitch : %f , yaw : %f , throttle : %f , switch1 : %f , switch2 : %f\n"
+    ,m_inputs.roll, m_inputs.pitch , m_inputs.yaw , m_inputs.throttle , m_inputs.switch1 , m_inputs.switch2);
+}
