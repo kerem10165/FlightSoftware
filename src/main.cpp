@@ -9,9 +9,13 @@ float dt;
 unsigned long current_time, prev_time;
 
 RPY maxValues{30.f,30.f,180.};
+RPY kp{0.3,0.3,0.3};
+RPY ki{0.3,0.3,0.05};
+RPY kd{0.05,0.05,0.00015};
 
 Imu* imu;
 Receiver * receiver;
+Pid pid{kp,ki,kd , 25.f};
 
 static inline void loopRate(int freq) 
 {
@@ -23,7 +27,6 @@ static inline void loopRate(int freq)
   }
 }
 
-
 void setup() {
   Serial.begin(9600);
 
@@ -32,7 +35,6 @@ void setup() {
 
   imu->printImuError();
 }
-
 
 void loop() 
 {
@@ -44,16 +46,17 @@ void loop()
 
   const auto& rollPitchYaw = imu->getRollPitchYaw(accelAndGyro , dt);
 
-  if(auto input = receiver->getCommand())
+  /*if(auto input = receiver->getCommand())
   {
     auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
-    Serial.printf("roll : %f , pitch : %f , yaw : %f\n" , scaledRollPitchYawInput.roll , scaledRollPitchYawInput.pitch , scaledRollPitchYawInput.yaw);
+    auto pidVal = pid.getPidValues(rollPitchYaw , accelAndGyro , scaledRollPitchYawInput , dt);
   }
 
   else
   {
     Serial.println("Error!!!!");
-  }
+  }*/
+  
   
 
   loopRate(2000);
