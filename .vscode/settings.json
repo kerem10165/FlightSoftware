@@ -20,6 +20,21 @@
         "utility": "cpp",
         "typeinfo": "cpp",
         "string": "cpp",
-        "vector": "cpp"
-    }
+        "vector": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "algorithm": "cpp",
+        "functional": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "fstream": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "numeric": "cpp",
+        "sstream": "cpp",
+        "stdexcept": "cpp",
+        "streambuf": "cpp"
+    },
+    "cmake.configureOnOpen": false
 }
