@@ -27,10 +27,20 @@ void EngineControl::driveEngine(float throttle , const RPY& rpyPid)
         backRightEngineThrottle = (backRightEngineThrottle / maxThrottle) * 2000;
     }
 
+    Serial.printf("Before = Front Left : %f , Front Right : %f , Back Left : %f , Back Right : %f\n" , 
+    frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle);
+
     frontLeftEngineThrottle = map(frontLeftEngineThrottle , 1000 , 2000 , 0 , 160);
     frontRightEngineThrottle = map(frontRightEngineThrottle , 1000 , 2000 , 0 , 160);
     backLeftEngineThrottle = map(backLeftEngineThrottle , 1000 , 2000 , 0 , 160);
     backRightEngineThrottle = map(backRightEngineThrottle , 1000 , 2000 , 0 , 160);
+
+    Serial.printf("After = Front Left : %f , Front Right : %f , Back Left : %f , Back Right : %f\n" , 
+    frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle);
+
+    Serial.println();
+    Serial.println();
+
 
     m_frontLeftEngine.write(frontLeftEngineThrottle);
     m_frontRightEngine.write(frontRightEngineThrottle);

@@ -8,9 +8,10 @@ class Pid
 public:
     Pid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit);
 
-    RPY getPidValues(const RPY& eulers , const ImuData& rawImuData , const RPY& desiredValues , float deltaTime);
-    float getPidValue(float desiredAngle , float angle , float kp , float ki , float kd
-    ,float& lastError , float& integralPrev , float dt);
+    RPY getPidValues(const RPY& eulers , const ImuData& rawImuData , const RPY& desiredValues , float throttle , float deltaTime);
+    float getPidValue(float desiredAngle , float angle , float rawAngle , float kp , float ki , float kd
+    ,float& lastError , float& integralPrev , float throttle , float dt);
+    void resetLastPidValues();
 private:
     RPY m_kp;
     RPY m_ki;

@@ -10,13 +10,13 @@ float dt;
 unsigned long current_time, prev_time;
 
 RPY maxValues{30.f,30.f,180.};
-RPY kp{0.3,0.3,0.3};
-RPY ki{0.3,0.3,0.05};
-RPY kd{0.05,0.05,0.00015};
+RPY kp{0.5,0.5,0.4};
+RPY ki{0.2,0.2,0.5};
+RPY kd{0.1,0.1,0.0015};
 
 Imu* imu;
 Receiver * receiver;
-Pid pid{kp,ki,kd , 25.f};
+Pid pid{kp,ki,kd , 50.f};
 EngineControl* engines;
 
 
@@ -54,16 +54,28 @@ void loop()
 
   if(auto input = receiver->getCommand())
   {
-    auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
-    auto pidVal = pid.getPidValues(rollPitchYaw , accelAndGyro , scaledRollPitchYawInput , dt);
+    if(input->throttle >= 1012 && input->switch1 > 1500)
+    {
+      auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
+      auto pidVal = pid.getPidValues(rollPitchYaw , accelAndGyro , scaledRollPitchYawInput , input->throttle , dt);
 
-    engines->driveEngine(input->throttle , pidVal);
+      //Serial.printf("Kumanda Roll : %f , Pitch : %f , Yaw : %f , Throttle : %f\n" , input->roll ,input->pitch , input->yaw , input->throttle);
+      Serial.printf("Angels Roll : %f , Pitch : %f , Yaw : %f\n" , rollPitchYaw.roll , rollPitchYaw.pitch , rollPitchYaw.yaw);
+
+      engines->driveEngine(input->throttle , pidVal);
+    }
+    else
+    {
+      engines->startupEngines();
+      pid.resetLastPidValues();
+    }   
   }
 
   else
   {
     Serial.println("Error!!!!");
     engines->failSafe();
+    pid.resetLastPidValues();
   }
   
   
