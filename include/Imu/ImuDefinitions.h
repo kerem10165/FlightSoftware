@@ -52,11 +52,18 @@ struct ImuData
     float GyroZ = 0.f;
 };
 
+struct GyroData
+{
+    float GyroX = 0.f;
+    float GyroY= 0.f;
+    float GyroZ = 0.f;
+};
+
 struct RPY
 {
-    float roll = 0.f;
-    float pitch = 0.f;
-    float yaw = 0.f; 
+    float Roll = 0.f;
+    float Pitch = 0.f;
+    float Yaw = 0.f; 
 };
 
 #endif

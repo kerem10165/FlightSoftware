@@ -56,9 +56,9 @@ ReceiverInput* Receiver::getCommand()
 RPY Receiver::scaleRollPitchYawCommand(const RPY& maxValues)
 {
     return 
-        {   map(m_inputs.roll , 990 , 2010 , -maxValues.roll , maxValues.roll),
-            -map(m_inputs.pitch , 990 , 2010 , -maxValues.pitch , maxValues.pitch),
-            map(m_inputs.yaw , 990 , 2010 , -maxValues.yaw , maxValues.yaw)  };
+        {   map(m_inputs.roll , 990 , 2010 , -maxValues.Roll , maxValues.Roll),
+            -map(m_inputs.pitch , 990 , 2010 , -maxValues.Pitch , maxValues.Pitch),
+            map(m_inputs.yaw , 990 , 2010 , -maxValues.Yaw , maxValues.Yaw)  };
 }
 
 void Receiver::printReceiver()

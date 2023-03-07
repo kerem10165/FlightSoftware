@@ -34,7 +34,8 @@
         "numeric": "cpp",
         "sstream": "cpp",
         "stdexcept": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "cstddef": "cpp"
     },
     "cmake.configureOnOpen": false
 }
