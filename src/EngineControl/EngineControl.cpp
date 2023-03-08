@@ -38,9 +38,6 @@ void EngineControl::driveEngine(float throttle , const RPY& rpyPid)
     backLeftEngineThrottle = map(backLeftEngineThrottle , 1000 , 2000 , 0 , 180);
     backRightEngineThrottle = map(backRightEngineThrottle , 1000 , 2000 , 0 , 180);
 
-    Serial.printf("After = Front Left : %f , Front Right : %f , Back Left : %f , Back Right : %f\n" , 
-    frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle);
-
     m_frontLeftEngine.write(frontLeftEngineThrottle);
     m_frontRightEngine.write(frontRightEngineThrottle);
     m_backLeftEngine.write(backLeftEngineThrottle);
