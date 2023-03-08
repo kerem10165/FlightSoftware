@@ -1,21 +1,21 @@
 #include <Arduino.h>
 #include <Receiver/Receiver.h>
 #include <Imu/Imu.h>
-#include <Pid/RatePid.h>
+#include <Pid/Pid.h>
 #include <EngineControl/EngineControl.h>
 
 float dt;
 unsigned long current_time, prev_time;
 
-RPY maxValues{75.f,75.f,180.f};
-RPY kp{0.6,0.6,0.8};
-RPY ki{2,2,4};
-RPY kd{0.03,0.03,0.};
+RPY maxValues{40.f,40.f,180.f};
+RPY kp{0.25,0.25,0.5};
+RPY ki{0.8,0.8,0.01};
+RPY kd{0.025,0.025,0.};
 
 Receiver * receiver{nullptr};
 Imu* imu{nullptr};
 EngineControl* engines{nullptr};
-RatePid pid{kp,ki,kd};
+Pid pid{kp,ki,kd};
 
 static inline void loopRate(int freq) 
 {
@@ -45,20 +45,19 @@ void loop()
 
   if(auto input = receiver->getCommand())
   {
-    if(input->throttle > 1060 && input->throttle < 1120 && input->switch1 > 1500)
+    if(input->throttle > 1060 && input->throttle < 1080 && input->switch1 > 1500)
       pid.resetIntegralValues();
 
     if(input->throttle > 1060 && input->switch1 > 1500)
     {
-      auto gyroData = imu->getGyro();
+      auto gyroData = imu->getRollPitchGyroZ();
       auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
-      auto pidVal = pid.getPidValues(gyroData , scaledRollPitchYawInput , dt);
+      auto pidVal = pid.getPidValues(gyroData , scaledRollPitchYawInput , 1.f / 250);
 
       Serial.printf("%Roll: %f , Pitch : %f , Yaw : %f , Throttle : %f\n" , scaledRollPitchYawInput.Roll , 
       scaledRollPitchYawInput.Pitch , scaledRollPitchYawInput.Yaw , input->throttle);
 
       engines->driveEngine(input->throttle , pidVal);
-
       Serial.printf("\n\n");
     }
     else
