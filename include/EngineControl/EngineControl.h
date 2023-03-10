@@ -5,6 +5,10 @@
 #include <Servo.h>
 #include "Imu/ImuDefinitions.h"
 
+#ifdef DEBUGOVERWIFI
+#include <Debug/DebugDefinitions.h>
+#endif
+
 class EngineControl
 {
 public:
@@ -17,6 +21,11 @@ private:
     Servo m_frontRightEngine;
     Servo m_backLeftEngine;
     Servo m_backRightEngine;
+
+#ifdef DEBUGOVERWIFI
+public:
+    EngineDebugDefinitions m_engineDebug;
+#endif
 };
 
 

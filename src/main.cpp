@@ -4,13 +4,23 @@
 #include <Pid/Pid.h>
 #include <EngineControl/EngineControl.h>
 
+#ifdef DEBUGOVERWIFI
+#include <Debug/DebugDefinitions.h>
+#include <EasyTransfer.h>
+
+void sendDebugValues(float throttle);
+
+EasyTransfer ET;
+DebugInformation dataToSend;
+#endif
+
 float dt;
-unsigned long current_time, prev_time;
+unsigned long current_time, prev_time , time_counter;
 
 RPY maxValues{40.f,40.f,180.f};
-RPY kp{0.25,0.25,0.5};
+RPY kp{0.7,0.7,0.5};
 RPY ki{0.8,0.8,0.01};
-RPY kd{0.025,0.025,0.};
+RPY kd{1.5,1.5,0.};
 
 Receiver * receiver{nullptr};
 Imu* imu{nullptr};
@@ -22,13 +32,19 @@ static inline void loopRate(int freq)
   float invFreq = 1.0/freq*1000000.0;
   unsigned long checker = micros();
   
-  while (invFreq > (checker - current_time)) {
+  while (invFreq > (checker - current_time)) 
+  {
     checker = micros();
   }
 }
 
-void setup() {
+
+void setup() 
+{
   Serial.begin(9600);
+  Serial1.begin(115200);
+
+  ET.begin(details(dataToSend), &Serial1);
 
   imu = new Imu{2000};
 
@@ -65,15 +81,35 @@ void loop()
       engines->failSafe();
       pid.resetPidValues();
     }
+
+#ifdef DEBUGOVERWIFI
+    if(current_time - time_counter > 16'000)
+    {
+      sendDebugValues(input->throttle);
+      time_counter = current_time;
+    }
+#endif
   }
 
   else
   {
-    Serial.println("Error Occured While Reading!!!");
+    //Serial.println("Error Occured While Reading!!!");
     engines->failSafe();
     pid.resetPidValues();
   }
-  
+
   loopRate(250);
 }
 
+#ifdef DEBUGOVERWIFI
+void sendDebugValues(float throttle)
+{
+  dataToSend.throttle = throttle;
+  dataToSend.engine = engines->m_engineDebug;
+  dataToSend.pid = pid.m_pidDebug;
+
+  Serial.printf("DATATATATATATA : %f - %f\n" ,dataToSend.engine.after_backLeftEngine , dataToSend.throttle);
+
+  ET.sendData();
+}
+#endif

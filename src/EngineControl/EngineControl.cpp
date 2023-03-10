@@ -20,6 +20,9 @@ void EngineControl::driveEngine(float throttle , const RPY& rpyPid)
     float backLeftEngineThrottle = throttle + rpyPid.Pitch + rpyPid.Roll - rpyPid.Yaw;
     float backRightEngineThrottle = throttle + rpyPid.Pitch - rpyPid.Roll + rpyPid.Yaw;
 
+    auto t_frontLeftEngineThrottle = frontLeftEngineThrottle , t_frontRightEngineThrottle = frontRightEngineThrottle;
+    auto t_backLeftEngineThrottle = backLeftEngineThrottle , t_backRightEngineThrottle = backRightEngineThrottle;
+
     auto minThrottle = std::min({frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle});
 
     if(minThrottle < 1000)
@@ -29,6 +32,10 @@ void EngineControl::driveEngine(float throttle , const RPY& rpyPid)
         backLeftEngineThrottle =  (backLeftEngineThrottle*1000) / minThrottle;
         backRightEngineThrottle =  (backRightEngineThrottle*1000) / minThrottle;
     }
+
+#ifdef DEBUGOVERWIFI
+    m_engineDebug = { frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle ,backRightEngineThrottle };
+#endif
 
     Serial.printf("Before = Front Left : %f , Front Right : %f , Back Left : %f , Back Right : %f\n" , 
     frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle);
