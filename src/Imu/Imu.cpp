@@ -2,124 +2,181 @@
 #include <Wire.h>
 #include <Imu/Imu.h>
 
-Imu::Imu(size_t readCount)
+Imu::Imu(const ImuData& errorOfImu)
+    :m_errorOfImu{errorOfImu} , mpu6050{MPU6050{}}
 {
-    Wire.setClock(400000);
-    Wire.begin();
-    delay(250);
-    Wire.beginTransmission(0x68); 
-    Wire.write(0x6B);
-    Wire.write(0x00);
-    Wire.endTransmission();
-
-    for(size_t i{} ; i < readCount ; ++i)
+    mpu6050.initialize();
+    
+    if (mpu6050.testConnection() == false) 
     {
-        auto gyroData = rawGyro();
-        m_GyroError.Roll += gyroData.first.Roll;
-        m_GyroError.Pitch += gyroData.first.Pitch;
-        m_GyroError.Yaw += gyroData.first.Yaw;
-        delay(1);
+      while(1) 
+      {
+        Serial.printf("Imu connection isn't succesfull");
+      }
     }
 
-    m_GyroError.Roll /= readCount;
-    m_GyroError.Pitch /= readCount;
-    m_GyroError.Yaw /= readCount;
+    mpu6050.setFullScaleGyroRange(GYRO_SCALE);
+    mpu6050.setFullScaleAccelRange(ACCEL_SCALE);
+}
 
-    for(size_t i{} ; i < readCount/4 ; ++i)
+
+ImuData Imu::setImuError()
+{
+    int16_t AcX,AcY,AcZ,GyX,GyY,GyZ;
+    ImuData errors{};
+
+    size_t readCount{12'000};
+    for(size_t i {0} ; i < readCount ; ++i)
     {
-        auto rollPitchGyro = getRawRollPitchGyroZ();
-        m_rollError += rollPitchGyro.Roll;
-        m_pitchError += rollPitchGyro.Pitch;
+        mpu6050.getMotion6(&AcX, &AcY, &AcZ, &GyX, &GyY, &GyZ);
+        float AccX  = AcX / ACCEL_SCALE_FACTOR;
+        float AccY  = AcY / ACCEL_SCALE_FACTOR;
+        float AccZ  = AcZ / ACCEL_SCALE_FACTOR;
+        float GyroX = GyX / GYRO_SCALE_FACTOR;
+        float GyroY = GyY / GYRO_SCALE_FACTOR;
+        float GyroZ = GyZ / GYRO_SCALE_FACTOR;
+
+        errors.AccX += AccX;
+        errors.AccY += AccY;
+        errors.AccZ += AccZ;
+        errors.GyroX += GyroX;
+        errors.GyroY += GyroY;
+        errors.GyroZ += GyroZ;
     }
 
-    m_rollError /= (readCount/4);
-    m_pitchError /= (readCount/4);
+    errors.AccX/=readCount;
+    errors.AccY/=readCount;
+    errors.AccZ/=readCount;
+    errors.GyroX/=readCount;
+    errors.GyroY/=readCount;
+    errors.GyroZ/=readCount;
+
+    m_errorOfImu = errors;
+
+    return m_errorOfImu;
 }
 
-Imu::GYRO Imu::getGyro()
+void Imu::printImuError()
 {
-    auto gyroData = rawGyro();
-
-    gyroData.first.Roll -= m_GyroError.Roll;
-    gyroData.first.Pitch -= m_GyroError.Pitch;
-    gyroData.first.Yaw -= m_GyroError.Yaw;
-
-    return gyroData.first;
+    Serial.printf("Errors AccX : %f AccY : %f AccZ : %f\nGyroX: %f GyroY : %f GyroZ : %f\n",
+    m_errorOfImu.AccX , m_errorOfImu.AccY , m_errorOfImu.AccZ , m_errorOfImu.GyroX , m_errorOfImu.GyroY , m_errorOfImu.GyroZ);
 }
 
-RPY Imu::getRollPitchGyroZ()
+const ImuData& Imu::getImuData()
 {
-    auto rawRPGz = getRawRollPitchGyroZ();
-    rawRPGz.Roll -= m_rollError;
-    rawRPGz.Pitch -= m_pitchError;
+    int16_t AcX,AcY,AcZ,GyX,GyY,GyZ;
+    mpu6050.getMotion6(&AcX, &AcY, &AcZ, &GyX, &GyY, &GyZ);
     
-    return rawRPGz;
-}
+    ImuData newImuData;
 
-Imu::RawImuData Imu::rawGyro()
-{
-    Wire.beginTransmission(0x68);
-    Wire.write(0x1A);
-    Wire.write(0x05);
-    Wire.endTransmission();
+    newImuData.AccX = AcX / ACCEL_SCALE_FACTOR;
+    newImuData.AccY = AcY / ACCEL_SCALE_FACTOR;
+    newImuData.AccZ = AcZ / ACCEL_SCALE_FACTOR;
 
-    Wire.beginTransmission(0x68);
-    Wire.write(0x1C);
-    Wire.write(0x10);
-    Wire.endTransmission();
-    Wire.beginTransmission(0x68);
-    Wire.write(0x3B);
-    Wire.endTransmission(); 
-    Wire.requestFrom(0x68,6);
-    int16_t AccXLSB = Wire.read() << 8 | Wire.read();
-    int16_t AccYLSB = Wire.read() << 8 | Wire.read();
-    int16_t AccZLSB = Wire.read() << 8 | Wire.read();
-
-    Wire.beginTransmission(0x68);
-    Wire.write(0x1B);
-    Wire.write(0x08);
-    Wire.endTransmission();
-    Wire.beginTransmission(0x68);
-    Wire.write(0x43);
-    Wire.endTransmission(); 
-    Wire.requestFrom(0x68,6);
+    newImuData.AccX-=m_errorOfImu.AccX;
+    newImuData.AccY-=m_errorOfImu.AccY;
+    newImuData.AccZ-=m_errorOfImu.AccZ;
     
-    int16_t GyroX=Wire.read()<<8 | Wire.read();
-    int16_t GyroY=Wire.read()<<8 | Wire.read();
-    int16_t GyroZ=Wire.read()<<8 | Wire.read();
+    newImuData.AccX = (1.0 - B_accel)*m_mpuRawData.AccX + B_accel*newImuData.AccX;
+    newImuData.AccY = (1.0 - B_accel)*m_mpuRawData.AccY + B_accel*newImuData.AccY;
+    newImuData.AccZ = (1.0 - B_accel)*m_mpuRawData.AccZ + B_accel*newImuData.AccZ;
     
-    return {GYRO{GyroX/65.5f , GyroY/65.5f , GyroZ/65.5f} , ACCELOMETER{(float)AccXLSB/4096 , (float)AccYLSB/4096, (float)AccZLSB/4096}};
+    newImuData.GyroX = GyX / GYRO_SCALE_FACTOR;
+    newImuData.GyroY = GyY / GYRO_SCALE_FACTOR;
+    newImuData.GyroZ = GyZ / GYRO_SCALE_FACTOR;
+
+    newImuData.GyroX-=m_errorOfImu.GyroX;
+    newImuData.GyroY-=m_errorOfImu.GyroY;
+    newImuData.GyroZ-=m_errorOfImu.GyroZ;
+
+    newImuData.GyroX = (1.0 - B_gyro)*m_mpuRawData.GyroX + B_gyro*newImuData.GyroX;
+    newImuData.GyroY = (1.0 - B_gyro)*m_mpuRawData.GyroY + B_gyro*newImuData.GyroY;
+    newImuData.GyroZ = (1.0 - B_gyro)*m_mpuRawData.GyroZ + B_gyro*newImuData.GyroZ;
+    
+    m_mpuRawData = newImuData;
+
+    return m_mpuRawData;
 }
 
-std::pair<Imu::State,Imu::Uncertainty> Imu::kalman(float kalmanState, float kalmanUncertainty, float kalmanInput, float kalmanMeasurement) 
+RPY Imu::getRollPitchYaw(const ImuData& mpuRawData, float invSampleFreq)
 {
-    kalmanState= kalmanState+0.004*kalmanInput;
-    kalmanUncertainty= kalmanUncertainty + 0.004 * 0.004 * 4 * 4;
-    float kalmanGain= kalmanUncertainty * 1/(1*kalmanUncertainty + 3 * 3);
-    kalmanState= kalmanState+kalmanGain * (kalmanMeasurement-kalmanState);
-    kalmanUncertainty=(1-kalmanGain) * kalmanUncertainty;
-
-    return {kalmanState , kalmanUncertainty};
+    return getRollPitchYaw(mpuRawData.GyroX , -mpuRawData.GyroY , -mpuRawData.GyroZ , 
+                            -mpuRawData.AccX , mpuRawData.AccY , mpuRawData.AccZ , invSampleFreq);
 }
 
-RPY Imu::getRawRollPitchGyroZ()
+RPY Imu::getRollPitchYaw(float gx, float gy, float gz, float ax, float ay, float az, float invSampleFreq)
 {
-    auto gyroData = rawGyro();
+    float recipNorm;
+    float s0, s1, s2, s3;
+    float qDot1, qDot2, qDot3, qDot4;
+    float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
 
-    gyroData.first.Roll -= m_GyroError.Roll;
-    gyroData.first.Pitch -= m_GyroError.Pitch;
-    gyroData.first.Yaw -= m_GyroError.Yaw;
+    //Convert gyroscope degrees/sec to radians/sec
+    gx *= 0.0174533f;
+    gy *= 0.0174533f;
+    gz *= 0.0174533f;
 
-    auto angleRoll = atan(gyroData.second.Pitch/sqrt(gyroData.second.Roll *gyroData.second.Roll+ gyroData.second.Yaw*gyroData.second.Yaw))*1/(3.142/180);
-    auto rollKalman = kalman(m_kalmanAngleRoll, m_kalmanUncertaintyAngleRoll, gyroData.first.Roll, angleRoll);
-    m_kalmanAngleRoll = rollKalman.first;
-    m_kalmanUncertaintyAngleRoll = rollKalman.second;
+    //Rate of change of quaternion from gyroscope
+    qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
+    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
+    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
+    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
 
-    auto anglePitch = -atan(gyroData.second.Roll/sqrt(gyroData.second.Pitch*gyroData.second.Pitch+gyroData.second.Yaw*gyroData.second.Yaw))*1/(3.142/180);
-    auto pitchKalman = kalman(m_kalmanAnglePitch, m_kalmanUncertaintyAnglePitch, gyroData.first.Pitch, anglePitch);
-    m_kalmanAnglePitch = pitchKalman.first;
-    m_kalmanUncertaintyAnglePitch = pitchKalman.second;
+    //Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
+    if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
+    //Normalise accelerometer measurement
+    recipNorm = 1.f / sqrtf(ax * ax + ay * ay + az * az);
+    ax *= recipNorm;
+    ay *= recipNorm;
+    az *= recipNorm;
 
-    return {m_kalmanAngleRoll , m_kalmanAnglePitch , gyroData.first.Yaw};
+    //Auxiliary variables to avoid repeated arithmetic
+    _2q0 = 2.0f * q0;
+    _2q1 = 2.0f * q1;
+    _2q2 = 2.0f * q2;
+    _2q3 = 2.0f * q3;
+    _4q0 = 4.0f * q0;
+    _4q1 = 4.0f * q1;
+    _4q2 = 4.0f * q2;
+    _8q1 = 8.0f * q1;
+    _8q2 = 8.0f * q2;
+    q0q0 = q0 * q0;
+    q1q1 = q1 * q1;
+    q2q2 = q2 * q2;
+    q3q3 = q3 * q3;
+
+    //Gradient decent algorithm corrective step
+    s0 = _4q0 * q2q2 + _2q2 * ax + _4q0 * q1q1 - _2q1 * ay;
+    s1 = _4q1 * q3q3 - _2q3 * ax + 4.0f * q0q0 * q1 - _2q0 * ay - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * az;
+    s2 = 4.0f * q0q0 * q2 + _2q0 * ax + _4q2 * q3q3 - _2q3 * ay - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * az;
+    s3 = 4.0f * q1q1 * q3 - _2q1 * ax + 4.0f * q2q2 * q3 - _2q2 * ay;
+    recipNorm = 1.f / sqrtf(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); //normalise step magnitude
+    s0 *= recipNorm;
+    s1 *= recipNorm;
+    s2 *= recipNorm;
+    s3 *= recipNorm;
+
+    //Apply feedback step
+    qDot1 -= B_madgwick * s0;
+    qDot2 -= B_madgwick * s1;
+    qDot3 -= B_madgwick * s2;
+    qDot4 -= B_madgwick * s3;
+    }
+
+    //Integrate rate of change of quaternion to yield quaternion
+    q0 += qDot1 * invSampleFreq;
+    q1 += qDot2 * invSampleFreq;
+    q2 += qDot3 * invSampleFreq;
+    q3 += qDot4 * invSampleFreq;
+
+    //Normalise quaternion
+    recipNorm = 1.f / sqrtf(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 *= recipNorm;
+    q1 *= recipNorm;
+    q2 *= recipNorm;
+    q3 *= recipNorm;
+
+    return RPY{atan2f(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2)*57.29577951f , 
+                -asinf(-2.0f * (q1*q3 - q0*q2))*57.29577951f , 
+                -atan2f(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3)*57.29577951f};
 }
-

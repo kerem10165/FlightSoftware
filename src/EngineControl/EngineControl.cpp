@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+
 EngineControl::EngineControl(int frontLeftEnginePin , int frontRightEnginePin , int backLeftEnginePin , int backRightEnginePin)
 {
     m_frontLeftEngine.attach(frontLeftEnginePin , 1000 , 2000);
@@ -15,40 +16,28 @@ void EngineControl::driveEngine(float throttle , const RPY& rpyPid)
     if(throttle > 1750) 
         throttle = 1750;
 
-    float frontLeftEngineThrottle = throttle - rpyPid.Pitch + rpyPid.Roll + rpyPid.Yaw;
-    float frontRightEngineThrottle = throttle - rpyPid.Pitch - rpyPid.Roll - rpyPid.Yaw;
-    float backLeftEngineThrottle = throttle + rpyPid.Pitch + rpyPid.Roll - rpyPid.Yaw;
-    float backRightEngineThrottle = throttle + rpyPid.Pitch - rpyPid.Roll + rpyPid.Yaw;
+    throttle -= 1000.f;
+    throttle /= 1000.f;
+    throttle = constrain(throttle , 0.f , 1.f); 
 
-    auto t_frontLeftEngineThrottle = frontLeftEngineThrottle , t_frontRightEngineThrottle = frontRightEngineThrottle;
-    auto t_backLeftEngineThrottle = backLeftEngineThrottle , t_backRightEngineThrottle = backRightEngineThrottle;
+    float frontLeftEngineThrottle = throttle -rpyPid.Pitch + rpyPid.Roll + rpyPid.Yaw;
+    float frontRightEngineThrottle = throttle -rpyPid.Pitch - rpyPid.Roll - rpyPid.Yaw;
+    float backRightEngineThrottle = throttle +rpyPid.Pitch - rpyPid.Roll + rpyPid.Yaw;
+    float backLeftEngineThrottle = throttle +rpyPid.Pitch + rpyPid.Roll - rpyPid.Yaw;
 
-    auto minThrottle = std::min({frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle});
+    // Serial.printf("Roll : %f , Pitch %f , Yaw : %f\n" , rpyPid.Roll *180 , rpyPid.Pitch * 180 , rpyPid.Yaw * 180);
 
-    if(minThrottle < 1000)
-    {
-        frontLeftEngineThrottle =  (frontLeftEngineThrottle*1000) / minThrottle;
-        frontRightEngineThrottle =  (frontRightEngineThrottle*1000) / minThrottle;
-        backLeftEngineThrottle =  (backLeftEngineThrottle*1000) / minThrottle;
-        backRightEngineThrottle =  (backRightEngineThrottle*1000) / minThrottle;
-    }
-
+    Serial.printf("Throttle : %f  ,Motor 1 : %d , Motor 2 : %d , Motor 3 : %d , Motor 4 : %d\n" , throttle , 
+    static_cast<int>(frontLeftEngineThrottle *180) , static_cast<int>(frontRightEngineThrottle *180) , 
+    static_cast<int>(backRightEngineThrottle *180) , static_cast<int>(backLeftEngineThrottle *180));
 #ifdef DEBUGOVERWIFI
     m_engineDebug = { frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle ,backRightEngineThrottle };
 #endif
 
-    Serial.printf("Before = Front Left : %f , Front Right : %f , Back Left : %f , Back Right : %f\n" , 
-    frontLeftEngineThrottle , frontRightEngineThrottle , backLeftEngineThrottle , backRightEngineThrottle);
-
-    frontLeftEngineThrottle = map(frontLeftEngineThrottle , 1000 , 2000 , 0 , 180);
-    frontRightEngineThrottle = map(frontRightEngineThrottle , 1000 , 2000 , 0 , 180);
-    backLeftEngineThrottle = map(backLeftEngineThrottle , 1000 , 2000 , 0 , 180);
-    backRightEngineThrottle = map(backRightEngineThrottle , 1000 , 2000 , 0 , 180);
-
-    m_frontLeftEngine.write(frontLeftEngineThrottle);
-    m_frontRightEngine.write(frontRightEngineThrottle);
-    m_backLeftEngine.write(backLeftEngineThrottle);
-    m_backRightEngine.write(backRightEngineThrottle);
+    m_frontLeftEngine.write(static_cast<int>(frontLeftEngineThrottle *180));
+    m_frontRightEngine.write(static_cast<int>(frontRightEngineThrottle *180));
+    m_backLeftEngine.write(static_cast<int>(backLeftEngineThrottle *180));
+    m_backRightEngine.write(static_cast<int>(backRightEngineThrottle *180));
 }
 
 void EngineControl::failSafe()

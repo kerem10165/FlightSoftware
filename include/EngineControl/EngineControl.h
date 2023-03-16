@@ -16,7 +16,7 @@ public:
     void driveEngine(float throttle , const RPY& rpyPid);
     void failSafe();
     void startupEngines();
-private:
+public:
     Servo m_frontLeftEngine;
     Servo m_frontRightEngine;
     Servo m_backLeftEngine;

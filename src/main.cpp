@@ -1,7 +1,7 @@
 #include <Arduino.h>
+#include <Wire.h>
 #include <Receiver/Receiver.h>
 #include <Imu/Imu.h>
-#include <Pid/Pid.h>
 #include <EngineControl/EngineControl.h>
 
 #ifdef DEBUGOVERWIFI
@@ -14,18 +14,20 @@ EasyTransfer ET;
 DebugInformation dataToSend;
 #endif
 
+#include "IncredibleNewPid/IncredibleNewPid.h"
+
 float dt;
 unsigned long current_time, prev_time , time_counter;
 
-RPY maxValues{40.f,40.f,180.f};
-RPY kp{0.7,0.7,0.5};
-RPY ki{0.8,0.8,0.01};
-RPY kd{1.5,1.5,0.};
+RPY maxValues{25.f,25.f,180.f};
+RPY kp{0.2,0.2,0.25f};
+RPY ki{0.25,0.25,0.05};
+RPY kd{0.065,0.065,0.00011};
 
 Receiver * receiver{nullptr};
 Imu* imu{nullptr};
 EngineControl* engines{nullptr};
-Pid pid{kp,ki,kd};
+IncredibleNewPid newPid{kp,ki,kd};
 
 static inline void loopRate(int freq) 
 {
@@ -44,14 +46,18 @@ void setup()
   Serial.begin(9600);
   Serial1.begin(115200);
 
+  Wire.begin();
+  Wire.setClock(1000000);
+
   ET.begin(details(dataToSend), &Serial1);
 
-  imu = new Imu{2000};
+  imu = new Imu{ImuData{0.04f,-0.02f, -0.02f,-0.56f,-1.03f,-1.54f}};
 
   receiver = new Receiver{15};
   engines = new EngineControl{12,14,11,13};
   engines->startupEngines();
 }
+
 
 void loop() 
 {
@@ -59,46 +65,33 @@ void loop()
   current_time = micros();      
   dt = (current_time - prev_time)/1000000.0;
 
+  auto rawImuData = imu->getImuData();
+  auto angles = imu->getRollPitchYaw(rawImuData , dt);
   if(auto input = receiver->getCommand())
   {
-    if(input->throttle > 1060 && input->throttle < 1080 && input->switch1 > 1500)
-      pid.resetIntegralValues();
+    auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
+    auto pidVal = newPid.getPid(angles , rawImuData , scaledRollPitchYawInput , dt , input->throttle);
+
+
+    // Serial.printf("Roll : %f Pitch : %f , Yaw : %f\n" , scaledRollPitchYawInput.Roll , scaledRollPitchYawInput.Pitch , scaledRollPitchYawInput . Yaw);
 
     if(input->throttle > 1060 && input->switch1 > 1500)
     {
-      auto gyroData = imu->getRollPitchGyroZ();
-      auto scaledRollPitchYawInput = receiver->scaleRollPitchYawCommand(maxValues);
-      auto pidVal = pid.getPidValues(gyroData , scaledRollPitchYawInput , 1.f / 250);
-
-      Serial.printf("%Roll: %f , Pitch : %f , Yaw : %f , Throttle : %f\n" , scaledRollPitchYawInput.Roll , 
-      scaledRollPitchYawInput.Pitch , scaledRollPitchYawInput.Yaw , input->throttle);
-
+      Serial.printf("Roll : %f , Pitch : %f Yaw : %f ", angles.Roll , angles.Pitch , angles.Yaw);
       engines->driveEngine(input->throttle , pidVal);
-      Serial.printf("\n\n");
     }
     else
     {
       engines->failSafe();
-      pid.resetPidValues();
     }
-
-#ifdef DEBUGOVERWIFI
-    if(current_time - time_counter > 16'000)
-    {
-      sendDebugValues(input->throttle);
-      time_counter = current_time;
-    }
-#endif
   }
 
   else
   {
     //Serial.println("Error Occured While Reading!!!");
     engines->failSafe();
-    pid.resetPidValues();
   }
-
-  loopRate(250);
+  loopRate(2000);
 }
 
 #ifdef DEBUGOVERWIFI
@@ -106,9 +99,6 @@ void sendDebugValues(float throttle)
 {
   dataToSend.throttle = throttle;
   dataToSend.engine = engines->m_engineDebug;
-  dataToSend.pid = pid.m_pidDebug;
-
-  Serial.printf("DATATATATATATA : %f - %f\n" ,dataToSend.engine.after_backLeftEngine , dataToSend.throttle);
 
   ET.sendData();
 }
