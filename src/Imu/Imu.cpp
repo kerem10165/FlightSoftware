@@ -3,7 +3,7 @@
 #include <Imu/Imu.h>
 
 Imu::Imu(const ImuData& errorOfImu)
-    :m_errorOfImu{errorOfImu} , mpu6050{MPU6050{}}
+    :mpu6050{MPU6050{}} ,m_errorOfImu{errorOfImu}
 {
     mpu6050.initialize();
     
@@ -11,7 +11,7 @@ Imu::Imu(const ImuData& errorOfImu)
     {
       while(1) 
       {
-        Serial.printf("Imu connection isn't succesfull");
+        Serial.printf("Imu connection isn't succesfull\n");
       }
     }
 
@@ -20,7 +20,7 @@ Imu::Imu(const ImuData& errorOfImu)
 }
 
 
-ImuData Imu::setImuError()
+ImuData Imu::getImuError() 
 {
     int16_t AcX,AcY,AcZ,GyX,GyY,GyZ;
     ImuData errors{};
@@ -46,20 +46,18 @@ ImuData Imu::setImuError()
 
     errors.AccX/=readCount;
     errors.AccY/=readCount;
-    errors.AccZ/=readCount;
+    (errors.AccZ/=readCount)-=1.f;
     errors.GyroX/=readCount;
     errors.GyroY/=readCount;
     errors.GyroZ/=readCount;
 
-    m_errorOfImu = errors;
-
-    return m_errorOfImu;
+    return errors;
 }
 
-void Imu::printImuError()
+void Imu::printImuError(const ImuData& error) const
 {
     Serial.printf("Errors AccX : %f AccY : %f AccZ : %f\nGyroX: %f GyroY : %f GyroZ : %f\n",
-    m_errorOfImu.AccX , m_errorOfImu.AccY , m_errorOfImu.AccZ , m_errorOfImu.GyroX , m_errorOfImu.GyroY , m_errorOfImu.GyroZ);
+    error.AccX , error.AccY , error.AccZ , error.GyroX , error.GyroY , error.GyroZ);
 }
 
 const ImuData& Imu::getImuData()

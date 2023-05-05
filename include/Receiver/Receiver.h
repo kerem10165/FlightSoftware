@@ -22,7 +22,7 @@ struct Receiver
     Receiver(int pin);
     
     ReceiverInput* getCommand();
-    RPY scaleRollPitchYawCommand(const RPY& maxValues);
+    RPY scaleRollPitchYawCommand(const ReceiverInput& inputs,const RPY& maxValues);
     void printReceiver();
     
     static ReceiverInput m_inputs;

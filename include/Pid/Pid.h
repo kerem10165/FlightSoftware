@@ -3,12 +3,7 @@
 
 #include <Imu/ImuDefinitions.h>
 
-#ifdef DEBUGOVERWIFI
-#include <array>
-#include <Debug/DebugDefinitions.h>
-#endif
-
-class IncredibleNewPid
+class Pid
 {
     enum class Choice
     {
@@ -17,7 +12,7 @@ class IncredibleNewPid
         Yaw = 2
     };
 public:
-    IncredibleNewPid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit = 25.f);
+    Pid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit = 25.f);
     RPY getPid(const RPY &angels , const ImuData& rawImuData , const RPY &desiredAngles, float dt , float throttle);
 private:
     float getPid(float angle , float rawImuData , float desiredAngle , float P , float I , float D , 

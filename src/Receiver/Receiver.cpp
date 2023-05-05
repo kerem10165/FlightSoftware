@@ -50,22 +50,25 @@ ReceiverInput* Receiver::getCommand()
     if(micros() - lastReadTime > 500'000) //timeout
         return nullptr;
 
-    
-
-    float b = 0.7; //Lower=slower, higher=noiser
-    m_inputs.pitch = (1.0 - b)*m_prevInput.pitch + b*m_inputs.pitch;
-    m_inputs.roll = (1.0 - b)*m_prevInput.roll + b*m_inputs.roll;
-    m_inputs.yaw = (1.0 - b)*m_prevInput.yaw + b*m_inputs.yaw;
-    
-    m_prevInput = m_inputs;
     return &m_inputs;
 }
 
-RPY Receiver::scaleRollPitchYawCommand(const RPY& maxValues)
+RPY Receiver::scaleRollPitchYawCommand(const ReceiverInput& inputs , const RPY& maxValues)
 {
-    auto rollInput = (m_inputs.roll - 1500.)/500.f;
-    auto pitchInput = (m_inputs.pitch - 1500.)/500.f;
-    auto yawInput = (m_inputs.yaw - 1500.)/500.f;
+    float rollInput{inputs.roll} , pitchInput{inputs.pitch} , yawInput{inputs.yaw};
+
+    if(rollInput > 1490 && rollInput < 1510)
+        rollInput = 1500;
+
+    if(pitchInput > 1490 && pitchInput < 1510)
+        pitchInput = 1500;
+
+    if(yawInput > 1490 && yawInput < 1510)
+        yawInput = 1500;  
+
+    rollInput = (rollInput - 1500.)/500.f;
+    pitchInput = (pitchInput - 1500.)/500.f;
+    yawInput = (yawInput - 1500.)/500.f;
     
     rollInput = constrain(rollInput , -1.f , 1.f);
     pitchInput = constrain(pitchInput , -1.f , 1.f);
