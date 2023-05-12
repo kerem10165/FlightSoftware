@@ -1,5 +1,5 @@
 #include "FlightControl/FlightControl.h"
-
+#include <FlightControl/Control.h>
 FlightControl::FlightControl()
 {
 
@@ -17,23 +17,26 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
         if(command.command == Command::fly_joyistick)
         {
             controlWJoyistick(rawImuData , angles , receiver , *input , dt);
-            m_throttle_set = true;
+            m_throttle_has_setted = false;
         }
         else if(command.command == Command::set_altitude)
         {
-            if(m_throttle_set)
-            {
-                m_last_throttle = input->throttle;
-                m_throttle_set = false;
-            }
-            if(input->throttle < m_last_throttle - 20 || input->throttle > m_last_throttle +20)
-            {
-                command = ReceiveCommand{Command::fly_joyistick , 0 , 0.f , 0.f};
-                m_last_throttle = 1000.f;
+            if(updateLastThrottleAndControlOwner(command , alitutdeControl , input->throttle))
                 return;
+            
+            if(input->switch1 > 1500)
+            {
+                auto throttle = alitutdeControl.control(command);
+                auto scaledRollPitchYawInput = receiver.scaleRollPitchYawCommand(*input ,m_maxValues);
+                auto quadPid = m_pid_quad.getPid(angles , rawImuData , scaledRollPitchYawInput , dt , throttle);
+                driveEngines(1000 , *input , quadPid);
             }
 
-            driveEngines(1050 , *input , {0,0,0});
+            else
+            {
+                alitutdeControl.setFirstTime(1310);
+                driveEngines(1000 , *input , {0.});
+            }
         }
     }
 
@@ -56,4 +59,37 @@ void FlightControl::driveEngines(float throttle ,const ReceiverInput& input , co
     }
     else
         m_engines->failSafe();
+}
+
+bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , Control& controller , float throttle)
+{
+    static int count{0};
+
+    // Serial.printf("Count : %d\n" , count);
+
+    if(!m_throttle_has_setted)
+    {
+        m_last_throttle = throttle;
+        controller.setFirstTime(1310);
+        count = 0;
+        m_throttle_has_setted = true;
+    }
+
+    if(throttle <= m_last_throttle - 75 || throttle >= m_last_throttle + 75)
+        ++count;
+    else
+        count = 0;
+
+    if(count >= 150)
+    {
+        Serial.printf("Yes\n");
+        command = ReceiveCommand{Command::fly_joyistick , 0 , 0.f , 0.f};
+        m_last_throttle = 1275.f;
+        m_throttle_has_setted = false;
+        controller.setFinishTime();
+        count = 0;
+        return true;
+    }
+
+    return false;
 }

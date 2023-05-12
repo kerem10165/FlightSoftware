@@ -62,8 +62,12 @@ void Imu::printImuError(const ImuData& error) const
 
 const ImuData& Imu::getImuData()
 {
-    int16_t AcX,AcY,AcZ,GyX,GyY,GyZ;
-    mpu6050.getMotion6(&AcX, &AcY, &AcZ, &GyX, &GyY, &GyZ);
+    end = millis();
+    if(end - last_read > 1)
+    {
+        mpu6050.getMotion6(&AcX, &AcY, &AcZ, &GyX, &GyY, &GyZ);
+        last_read = end;
+    }
     
     ImuData newImuData;
 

@@ -16,7 +16,7 @@ enum class Command : int
 struct ReceiveCommand
 {
     Command command;
-    int altitude;
+    float altitude;
     float lat;
     float lon;
 };

@@ -21,6 +21,7 @@ private:
     MPU6050 mpu6050;
     ImuData m_errorOfImu;
     ImuData m_mpuRawData{};
+    ImuData m_mpuMotionData{};
     float B_madgwick = 0.04;
     float B_accel = 0.14f;
     float B_gyro = 0.093f;
@@ -29,6 +30,9 @@ private:
     float q1 = 0.0f;
     float q2 = 0.0f;
     float q3 = 0.0f;
+
+    int16_t AcX{},AcY{},AcZ{},GyX{},GyY{},GyZ{};
+    uint32_t last_read{} , end{};
 };
 
 

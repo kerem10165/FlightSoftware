@@ -33,10 +33,10 @@ float Pid::getPid(float angle , float rawImuData , float desiredAngle , float P 
 {
     float error = desiredAngle - angle;
     float integral = integralPrev + error*dt;
-    if (throttle < 1225 && choice != Choice::Yaw)
+    if (throttle < 1160 && choice != Choice::Yaw)
         integral = 0;
     
-    if(throttle < 1125 && choice == Choice::Yaw)
+    if(throttle < 1150 && choice == Choice::Yaw)
         integral = 0;
     integral = constrain(integral, -m_integralLimit, m_integralLimit);
     
