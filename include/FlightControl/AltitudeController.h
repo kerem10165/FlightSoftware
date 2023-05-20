@@ -12,7 +12,7 @@ public:
     float pid(float desiredAltitude , float altitude , float velocity);
 
 private:
-    float m_kp{0.5f} , m_ki{0.65f} , m_kd{0.7f};
+    float m_kp{0.6f} , m_ki{0.65f} , m_kd{0.8f};
     float m_integralPrev{0.f} , m_errorPrev{0.f};
 };
 
@@ -34,7 +34,7 @@ private:
     float m_lastPid{0.f};
     float m_throttle{1000.f};
     float m_filteredAlt{0.f};
-    float m_altitudeFilterCof{0.15};
+    float m_altitudeFilterCof{0.1f};
 };
 
 

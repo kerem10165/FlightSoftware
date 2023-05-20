@@ -27,9 +27,10 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
             if(input->switch1 > 1500)
             {
                 auto throttle = alitutdeControl.control(command);
+                Serial.printf("Thro : %f , alt : %f\n" , throttle , command.altitude);
                 auto scaledRollPitchYawInput = receiver.scaleRollPitchYawCommand(*input ,m_maxValues);
                 auto quadPid = m_pid_quad.getPid(angles , rawImuData , scaledRollPitchYawInput , dt , throttle);
-                driveEngines(1000 , *input , quadPid);
+                driveEngines(throttle , *input , quadPid);
             }
 
             else
@@ -37,6 +38,9 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
                 alitutdeControl.setFirstTime(1310);
                 driveEngines(1000 , *input , {0.});
             }
+
+            auto newHeight = map(static_cast<float>(input->switch2) , 1000.f , 2000.f , 0.f, 2.5f);
+            command.altitude = newHeight;
         }
     }
 

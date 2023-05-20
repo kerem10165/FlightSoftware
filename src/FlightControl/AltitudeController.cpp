@@ -89,7 +89,7 @@ float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
     m_integralPrev = integral;
 
     float derivative = velocity * m_kd;
-    derivative = constrain(derivative , -200 , 200);
+    derivative = constrain(derivative , -50 , 200);
     m_errorPrev = error;
 
     return proportional + integral*m_ki - derivative;

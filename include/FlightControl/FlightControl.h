@@ -22,7 +22,7 @@ private:
     EngineControl* m_engines;
     AltitudeController alitutdeControl;
     const RPY m_maxValues{30.f,30.f,150.f};
-    const RPY m_kp{0.3,0.3,1.4f};
+    const RPY m_kp{0.305,0.305,1.4f};
     const RPY m_ki{0.475,0.475,0.00105f};
     const RPY m_kd{0.105,0.105,0.000075};
     Pid m_pid_quad{m_kp,m_ki,m_kd};

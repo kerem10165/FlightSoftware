@@ -50,7 +50,7 @@ void setup()
 
 
   command.command = Command::set_altitude;
-  command.altitude = 0.7;
+  command.altitude = 1.75;
 }
 
 uint32_t start , end , count;
@@ -67,6 +67,8 @@ void loop()
   ImuData rawImuData = imu->getImuData();
   RPY angles = imu->getRollPitchYaw(rawImuData , dt);
   flightControl->control(command , rawImuData , angles , *receiver , dt);
+
+  
 
   // Serial.printf("%R : %f, P : %f , Y : %f\n" , angles.Roll , angles.Pitch , angles.Yaw);
 
