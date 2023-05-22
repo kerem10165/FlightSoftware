@@ -3,7 +3,7 @@
 
 enum class Command : int
 {
-    fly_joyistick = 0,
+    fly_joyistick,
     set_altitude,
     set_pos,
     pos_hold,
@@ -11,7 +11,6 @@ enum class Command : int
     return_home,
     shut_down
 };
-
 
 struct ReceiveCommand
 {

@@ -13,7 +13,7 @@ public:
     float pid(float desiredAltitude , float altitude , float velocity);
 
 private:
-    float m_kp{0.6f} , m_ki{0.65f} , m_kd{0.7f};
+    float m_kp{0.5f} , m_ki{0.7f} , m_kd{0.6f};
     float m_integralPrev{0.f} , m_errorPrev{0.f};
 };
 
