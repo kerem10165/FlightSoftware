@@ -6,6 +6,7 @@
 #include <EngineControl/EngineControl.h>
 #include <Pid/Pid.h>
 #include <Communication/ReceiveCommand.h>
+#include <AltitudeComputer/AltitudeComputer.h>
 #include <FlightControl/AltitudeController.h>
 
 class FlightControl
@@ -13,7 +14,9 @@ class FlightControl
 public:
     FlightControl();
     void armEngine();
-    void control(ReceiveCommand& command , const ImuData& rawImuData , const RPY& angles , Receiver& receiver , float dt);
+    void control(ReceiveCommand& command, const ImuData& rawImuData , const RPY& angles,
+    const std::pair<AltitudeComputer::Altitude , AltitudeComputer::Velocity>& altitudeAndVelocity
+ , Receiver& receiver , float dt);
 private:
     void controlWJoyistick(const ImuData& rawImuData , const RPY& angles , Receiver& receiver , const ReceiverInput& input , float dt);
     void driveEngines(float throttle , const ReceiverInput& input , const RPY& quadPid);

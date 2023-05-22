@@ -1,5 +1,6 @@
 #include "FlightControl/FlightControl.h"
 #include <FlightControl/Control.h>
+
 FlightControl::FlightControl()
 {
 
@@ -10,7 +11,9 @@ void FlightControl::armEngine()
     m_engines = new EngineControl{12,14,11,13};
 }
 
-void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData , const RPY& angles , Receiver& receiver , float dt)
+void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData , const RPY& angles,
+    const std::pair<AltitudeComputer::Altitude , AltitudeComputer::Velocity>& altitudeAndVelocity
+    , Receiver& receiver , float dt)
 {
     if(auto input = receiver.getCommand())
     {
@@ -26,8 +29,7 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
             
             if(input->switch1 > 1500)
             {
-                auto throttle = alitutdeControl.control(command);
-                Serial.printf("Thro : %f , alt : %f\n" , throttle , command.altitude);
+                auto throttle = alitutdeControl.control(command , altitudeAndVelocity);
                 auto scaledRollPitchYawInput = receiver.scaleRollPitchYawCommand(*input ,m_maxValues);
                 auto quadPid = m_pid_quad.getPid(angles , rawImuData , scaledRollPitchYawInput , dt , throttle);
                 driveEngines(throttle , *input , quadPid);
@@ -39,7 +41,7 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
                 driveEngines(1000 , *input , {0.});
             }
 
-            auto newHeight = map(static_cast<float>(input->switch2) , 1000.f , 2000.f , 0.f, 2.5f);
+            auto newHeight = map(static_cast<float>(input->switch2) , 1000.f , 2000.f , 0.f, 8.f);
             command.altitude = newHeight;
         }
     }
@@ -68,8 +70,6 @@ void FlightControl::driveEngines(float throttle ,const ReceiverInput& input , co
 bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , Control& controller , float throttle)
 {
     static int count{0};
-
-    // Serial.printf("Count : %d\n" , count);
 
     if(!m_throttle_has_setted)
     {
