@@ -83,7 +83,7 @@ float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
 
     proportional = constrain(proportional , -50 , 200);
     
-    float integral = m_integralPrev + error * 0.00015f;
+    float integral = m_integralPrev + error * 0.0001f;
     integral = constrain(integral , -80 , 300);
     m_integralPrev = integral;
 
