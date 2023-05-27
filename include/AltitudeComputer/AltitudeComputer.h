@@ -2,26 +2,30 @@
 #define ALTITUDE_COMPUTER_H
 
 #include "Barometer.h"
-#include "Ultrasonic.h"
 #include <utility>
+
+#include <Imu/ImuDefinitions.h>
+
+float pressureToAltitude(float pressure);
+float altitudeToPressure(float altitude);
 
 class AltitudeComputer
 {
 public:
-    using Altitude = int;
-    using Velocity = float;
+    using Altitude = BarometerSensor::Altitude;
+    using Pressure = BarometerSensor::Pressure;
+    using ElapsedTime = BarometerSensor::ElapsedTime;
 public:
     AltitudeComputer();
-    std::pair<Altitude , Velocity> getAltitudeAndVerticalVelocity();
-private:
-    float getVelocity(uint32_t currentMeasurementTime , int currentAltitude , uint32_t lastMeasurementTime , int lastAltitude);
+    std::tuple<Altitude , Pressure , ElapsedTime> getAltitudeAndPressure();
+    float getGroundPressure() { return m_groundPressure; }
+    float getGroundAltitudeFromPressure() { return m_groundAltitudeFromPressure; }
 private:
     BarometerSensor barometer;
-    UltrasonicSensor ultrasonic;
-    int m_groundAltBarom{0};
-    int m_lastAltitude{0};
-    float m_velocity{0.f};
-    uint32_t m_lastMeasurementTime{};
+    float m_groundAlt{0.f};
+    float actualPressure{0.f};
+    float m_groundPressure{0.f};
+    float m_groundAltitudeFromPressure{0.f};
 };
 
 

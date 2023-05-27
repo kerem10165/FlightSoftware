@@ -1,6 +1,6 @@
 #include "FlightControl/FlightControl.h"
 #include <FlightControl/Control.h>
-
+#include <AltitudeComputer/AltitudeComputer.h>
 FlightControl::FlightControl()
 {
 
@@ -12,8 +12,7 @@ void FlightControl::armEngine()
 }
 
 void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData , const RPY& angles,
-    const std::pair<AltitudeComputer::Altitude , AltitudeComputer::Velocity>& altitudeAndVelocity
-    , Receiver& receiver , float dt)
+    uint32_t elapsedTimeLastAltitudeMeasurement ,float groundAltitude, float pressure, Receiver& receiver , float dt)
 {
     if(auto input = receiver.getCommand())
     {
@@ -24,12 +23,13 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
         }
         else if(command.command == Command::set_altitude)
         {
-            if(updateLastThrottleAndControlOwner(command , alitutdeControl , input->throttle))
+            auto altitude = pressureToAltitude(pressure);
+            if(updateLastThrottleAndControlOwner(command , alitutdeControl , input->throttle , altitude))
                 return;
             
             if(input->switch1 > 1500)
             {
-                auto throttle = alitutdeControl.control(command , altitudeAndVelocity);
+                auto throttle = alitutdeControl.control(command , pressure , elapsedTimeLastAltitudeMeasurement);
                 auto scaledRollPitchYawInput = receiver.scaleRollPitchYawCommand(*input ,m_maxValues);
                 auto quadPid = m_pid_quad.getPid(angles , rawImuData , scaledRollPitchYawInput , dt , throttle);
                 driveEngines(throttle , *input , quadPid);
@@ -37,12 +37,12 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
 
             else
             {
-                alitutdeControl.setFirstTime(1310);
-                driveEngines(1000 , *input , {0.});
+                alitutdeControl.resetValues(1320 , pressureToAltitude(pressure));
+                driveEngines(1000 , *input , RPY{0.f , 0.f , 0.f});
             }
 
             auto newHeight = map(static_cast<float>(input->switch2) , 1000.f , 2000.f , 0.f, 8.f);
-            command.altitude = newHeight;
+            command.altitude = newHeight + groundAltitude;
         }
     }
 
@@ -67,14 +67,14 @@ void FlightControl::driveEngines(float throttle ,const ReceiverInput& input , co
         m_engines->failSafe();
 }
 
-bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , Control& controller , float throttle)
+bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , Control& controller , float throttle , float altitude)
 {
     static int count{0};
 
     if(!m_throttle_has_setted)
     {
         m_last_throttle = throttle;
-        controller.setFirstTime(1310);
+        controller.setFirstTime(1320 , altitude);
         count = 0;
         m_throttle_has_setted = true;
     }
@@ -84,7 +84,7 @@ bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , 
     else
         count = 0;
 
-    if(count >= 150)
+    if(count >= 300)
     {
         Serial.printf("Yes\n");
         command = ReceiveCommand{Command::fly_joyistick , 0 , 0.f , 0.f};

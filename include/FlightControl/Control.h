@@ -5,7 +5,7 @@
 class Control
 {
 public:
-    virtual void setFirstTime(float throttle) = 0;
+    virtual void setFirstTime(float throttle , float Altitude) = 0;
     virtual void setFinishTime() = 0;
 };
 

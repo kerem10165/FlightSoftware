@@ -1,50 +1,48 @@
 #include <AltitudeComputer/AltitudeComputer.h>
 #include <limits>
 
+
 AltitudeComputer::AltitudeComputer()
 {
+    for(int i = 0 ; i < 5500 ; i++)
+        getAltitudeAndPressure();
 
+    int readCount = 1500;
+
+    for(int i = 0 ; i < readCount ; i++)
+    {
+        auto altitudeValues = getAltitudeAndPressure();
+
+        auto altitude = std::get<0>(altitudeValues);
+        auto pressure = std::get<1>(altitudeValues);
+
+        m_groundAlt += altitude;
+        m_groundPressure += (pressure /100.f); //prevent to overflow
+    }
+
+    m_groundAlt /= readCount;
+    (m_groundPressure /= readCount) *= 100.f;
+    m_groundAltitudeFromPressure = pressureToAltitude(m_groundPressure);
 }
 
-std::pair<AltitudeComputer::Altitude , AltitudeComputer::Velocity> AltitudeComputer::getAltitudeAndVerticalVelocity()
+std::tuple<AltitudeComputer::Altitude , AltitudeComputer::Pressure , AltitudeComputer::ElapsedTime> 
+    AltitudeComputer::getAltitudeAndPressure()
 {
-    auto altBaram = barometer.readBarometer();
-    auto altUltrasonic = ultrasonic.readUltrasonic();
+    auto altitudeValues = barometer.readBarometer();
+    
+    auto altitude = std::get<0>(altitudeValues);
+    auto pressure = std::get<1>(altitudeValues);
+    auto elapsedTime = std::get<2>(altitudeValues);
 
-    uint32_t currentMeasurementTime = std::numeric_limits<uint32_t>::max();
+    actualPressure = actualPressure * (float)0.985 + pressure * (float)0.015;
+    float actual_pressure_diff = actualPressure - pressure;
+    if (actual_pressure_diff > 7)actual_pressure_diff = 8;
+    if (actual_pressure_diff < -7)actual_pressure_diff = -8;
+    if (actual_pressure_diff > 1 || actual_pressure_diff < -1)actualPressure -= actual_pressure_diff / 6.0;
 
-    if(altUltrasonic.first >= 0 && altUltrasonic.first <= 275)
-    {
-        m_groundAltBarom = altBaram.first - altUltrasonic.first;
-        if(altUltrasonic.second != std::numeric_limits<uint32_t>::max())
-        {
-           currentMeasurementTime = millis();
-        } 
-    }
-
-    else if(altBaram.second != std::numeric_limits<uint32_t>::max())
-    {
-        currentMeasurementTime = millis();
-    }
-
-    if(currentMeasurementTime != std::numeric_limits<uint32_t>::max())
-    {
-        m_velocity = getVelocity(currentMeasurementTime , altBaram.first - m_groundAltBarom ,
-         m_lastMeasurementTime , m_lastAltitude);
-
-         m_lastMeasurementTime = currentMeasurementTime;
-    }
-
-    // if(altBaram.second != std::numeric_limits<uint32_t>::max())
-    //     Serial.printf("Barom : %f , Velocity : %f , elapsed time: %d\n" , altBaram.first /100.f  , m_velocity , altBaram.second);
-
-    m_lastAltitude = altBaram.first - m_groundAltBarom;
-
-
-    return std::make_pair(altBaram.first - m_groundAltBarom , m_velocity);
+    return std::make_tuple(altitude , actualPressure , elapsedTime);
 }
 
-float AltitudeComputer::getVelocity(uint32_t currentMeasurementTime , int currentAltitude , uint32_t lastMeasurementTime , int lastAltitude)
-{
-    return static_cast<float>(currentAltitude - lastAltitude) / ((currentMeasurementTime - lastMeasurementTime) /1000.f);
-}
+
+float pressureToAltitude(float pressure) { return 44330 * (1.0 - pow(pressure / 101325, 0.1903)); }
+float altitudeToPressure(float altitude) { return 101325 * pow((1.0 - altitude / 44330), (1.0 / 0.1903)); }

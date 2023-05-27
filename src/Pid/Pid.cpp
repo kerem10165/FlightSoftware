@@ -2,7 +2,6 @@
 #include "Pid/Pid.h"
 #include <DebugDefinitions.h>
 
-extern DebugInformation deb;
 
 Pid::Pid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit)
     : m_kp{kp} , m_ki{ki} , m_kd{kd} , m_integralLimit{integralLimit}
@@ -49,8 +48,6 @@ float Pid::getPid(float angle , float rawImuData , float desiredAngle , float P 
 
     float pid = P *error + I *integral - D *derivative;
     
-    deb.pid[static_cast<int>(choice)] = PidDebugDefinitions{angle , desiredAngle , error , errorPrev , pid};
-
 
     integralPrev = integral;
     errorPrev = error;

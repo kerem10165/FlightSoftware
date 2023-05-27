@@ -3,15 +3,17 @@
 
 #include <BMP388_DEV.h>   
 #include <utility>
+#include <tuple>
 
 class BarometerSensor
 {
 public:
-    using Altitude = int;
+    using Altitude = float;
+    using Pressure = float;
     using ElapsedTime = uint32_t;  
 public:
     BarometerSensor();
-    std::pair<Altitude , ElapsedTime> readBarometer();
+    std::tuple<Altitude , Pressure , ElapsedTime> readBarometer();
 private:
     BMP388_DEV bmp388;    
     float m_temperature{0.f}, m_pressure{0.f}, m_altitude{0.f};
