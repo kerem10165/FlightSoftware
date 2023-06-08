@@ -1,14 +1,21 @@
 #include <Arduino.h>
-#include "Pid/Pid.h"
+#include "Pid/AttitudeControlPid.h"
 #include <DebugDefinitions.h>
 
 
-Pid::Pid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit)
+AttitudeControlPid::AttitudeControlPid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit)
     : m_kp{kp} , m_ki{ki} , m_kd{kd} , m_integralLimit{integralLimit}
 {
 }
 
-RPY Pid::getPid(const RPY &angels , const ImuData& rawImuData , const RPY &desiredAngles, float dt , float throttle)
+void AttitudeControlPid::setPidParams(const RPY& p , const RPY& i , const RPY& d)
+{
+    m_kp = p;
+    m_ki = i;
+    m_kd = d;
+}
+
+RPY AttitudeControlPid::getPid(const RPY &angels , const ImuData& rawImuData , const RPY &desiredAngles, float dt , float throttle)
 {
     auto rollPid = getPid(angels.Roll , rawImuData.GyroX , desiredAngles.Roll , m_kp.Roll , m_ki.Roll , m_kd.Roll,
     dt , throttle , Choice::Roll , m_integralPrev.Roll , m_errorPrev.Roll);
@@ -30,7 +37,7 @@ RPY Pid::getPid(const RPY &angels , const ImuData& rawImuData , const RPY &desir
     return {rollPid , pitchPid , yawPid};
 }
 
-float Pid::getPid(float angle , float rawImuData , float desiredAngle , float P , float I , float D , 
+float AttitudeControlPid::getPid(float angle , float rawImuData , float desiredAngle , float P , float I , float D , 
     float dt , float throttle , Choice choice , float& integralPrev , float& errorPrev)
 {
     float error = desiredAngle - angle;

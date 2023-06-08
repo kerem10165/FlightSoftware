@@ -3,7 +3,7 @@
 
 #include <Imu/ImuDefinitions.h>
 
-class Pid
+class AttitudeControlPid
 {
     enum class Choice
     {
@@ -12,7 +12,8 @@ class Pid
         Yaw = 2
     };
 public:
-    Pid(const RPY& kp , const RPY& ki , const RPY& kd , float integralLimit = 30.f);
+    AttitudeControlPid(const RPY& kp = RPY{} , const RPY& ki = RPY{} , const RPY& kd = RPY{} , float integralLimit = 30.f);
+    void setPidParams(const RPY& p , const RPY& i , const RPY& d);
     RPY getPid(const RPY &angels , const ImuData& rawImuData , const RPY &desiredAngles, float dt , float throttle);
 private:
     float getPid(float angle , float rawImuData , float desiredAngle , float P , float I , float D , 

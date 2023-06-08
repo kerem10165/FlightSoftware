@@ -6,6 +6,7 @@
 #include <AltitudeComputer/AltitudeComputer.h>
 #include <Communication/ReceiveCommand.h>
 #include <Communication/SendCommand.h>
+#include <Settings/QuadSettings.h>
 
 float dt;
 unsigned long current_time, prev_time , time_counter;
@@ -14,8 +15,10 @@ Receiver * receiver{nullptr};
 Imu* imu{nullptr};
 AltitudeComputer* altitudeComputer{nullptr};
 FlightControl* flightControl;
-TransferData* transferData{};
+TransferData* transferData;
 ReceiveCommand command{Command::fly_joyistick , 0 , 0.f , 0.f};
+QuadSettings* quadSettings;
+ReceiveData * recevieData;
 
 void loopRate(int freq) 
 {
@@ -40,6 +43,13 @@ void setup()
   altitudeComputer = new AltitudeComputer;
   flightControl = new FlightControl;
   transferData = new TransferData;
+  quadSettings = new QuadSettings{flightControl};
+  recevieData = new ReceiveData{quadSettings , command};
+
+  //if you want to write into eeprom from in hardcoded pid values you have to comment this section
+  quadSettings->getValuesFromEepromAndSetup();
+  /*write for eeproom*/
+  // quadSettings->setValuesWithDefaultParams();
   
   // auto error = imu->getImuError();
   // while(1)
@@ -51,14 +61,11 @@ void setup()
   receiver = new Receiver{15};
   flightControl->armEngine();
   
-  command.command = Command::set_altitude;
-  command.altitude = 1.75;
-
+  command.command = Command::fly_joyistick;
 
 }
 
-uint32_t start , end , count , count2;
-
+uint32_t start , end , count , totalCount;
 
 void loop() 
 {
@@ -68,7 +75,6 @@ void loop()
 
   ImuData rawImuData = imu->getImuData();
   RPY angles = imu->getRollPitchYaw(rawImuData , dt);
-  
 
   auto altitudeValues = altitudeComputer->getAltitudeAndPressure();
 
@@ -81,24 +87,22 @@ void loop()
   flightControl->control(command , rawImuData , angles , elapsedTimeLastAltitudeMeasurement,
                         groundAltitudeFromPressureCalculation, pressure , *receiver , dt);
   
-
-  // Serial.printf("Ground Altitude : %f , Altitude : %f\n" , altitude , altitudeAndPressure.first);
-
-  // Serial.printf("%R : %f, P : %f , Y : %f\n" , angles.Roll , angles.Pitch , angles.Yaw);
-
   count++;
   end = millis();
   if(end - start > 1000)
   {
-    Serial.printf("Count Main : %d\n" , count);
-    count2 = count;
+    // Serial.printf("Count Main : %d\n" , count);
+    totalCount = count;
     count = 0;
     start = end;
   }
 
   auto altitudeFromGroundLevel = pressureToAltitude(pressure) - groundAltitudeFromPressureCalculation;
+  
+  recevieData->receiveDatas();
 
   transferData->transferData(angles , altitudeFromGroundLevel * 100 , command.command , 
-  count2);
-  loopRate(2026);
+  totalCount , *quadSettings);
+
+  loopRate(2028);
 }

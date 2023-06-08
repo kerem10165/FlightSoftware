@@ -1,6 +1,8 @@
 #include "FlightControl/FlightControl.h"
 #include <FlightControl/Control.h>
 #include <AltitudeComputer/AltitudeComputer.h>
+#include <Communication/ReceiveCommand.h>
+
 FlightControl::FlightControl()
 {
 
@@ -24,12 +26,13 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
         else if(command.command == Command::set_altitude)
         {
             auto altitude = pressureToAltitude(pressure);
-            if(updateLastThrottleAndControlOwner(command , alitutdeControl , input->throttle , altitude))
+            if(updateLastThrottleAndControlOwner(command , m_alitutdeControl , input->throttle , altitude))
                 return;
             
             if(input->switch1 > 1500)
             {
-                auto throttle = alitutdeControl.control(command , pressure , elapsedTimeLastAltitudeMeasurement);
+                auto desiredAltitude = command.altitude + groundAltitude;
+                auto throttle = m_alitutdeControl.control(desiredAltitude , pressure , elapsedTimeLastAltitudeMeasurement);
                 auto scaledRollPitchYawInput = receiver.scaleRollPitchYawCommand(*input ,m_maxValues);
                 auto quadPid = m_pid_quad.getPid(angles , rawImuData , scaledRollPitchYawInput , dt , throttle);
                 driveEngines(throttle , *input , quadPid);
@@ -37,12 +40,12 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
 
             else
             {
-                alitutdeControl.resetValues(1320 , pressureToAltitude(pressure));
+                m_alitutdeControl.resetValues(1320 , pressureToAltitude(pressure));
                 driveEngines(1000 , *input , RPY{0.f , 0.f , 0.f});
             }
 
-            auto newHeight = map(static_cast<float>(input->switch2) , 1000.f , 2000.f , 0.f, 8.f);
-            command.altitude = newHeight + groundAltitude;
+            // auto newHeight = map(static_cast<float>(input->switch2) , 1000.f , 2000.f , 0.f, 8.f);
+            // command.altitude = newHeight + groundAltitude;
         }
     }
 
@@ -86,7 +89,7 @@ bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , 
 
     if(count >= 300)
     {
-        Serial.printf("Yes\n");
+        Serial.printf("Flight By Joyistick\n");
         command = ReceiveCommand{Command::fly_joyistick , 0 , 0.f , 0.f};
         m_last_throttle = 1275.f;
         m_throttle_has_setted = false;
@@ -96,4 +99,14 @@ bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , 
     }
 
     return false;
+}
+
+void FlightControl::setAttitudeControlPid(const RPY& p , const RPY& i , const RPY& d)
+{
+    m_pid_quad.setPidParams(p, i, d);
+}
+
+void FlightControl::setAltitudeControlPid(float p, float i, float d)
+{
+    m_alitutdeControl.m_pid.setPidParams(p,i,d);
 }

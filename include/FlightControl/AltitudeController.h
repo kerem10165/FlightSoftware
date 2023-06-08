@@ -2,17 +2,22 @@
 #define ALTITUDE_CONTROL_H
 
 #include "Control.h"
-#include <Communication/ReceiveCommand.h>
 #include <array>
 #include <queue>
+
+class ReceiveCommand;
 
 class AltitudePid
 {
 public:
     AltitudePid() = default;
+    AltitudePid(AltitudePid&& other);
+    AltitudePid& operator=(AltitudePid&& other);
+    
     float pid(float desiredAltitude , float altitude , float velocity);
+    void setPidParams(float p , float i , float d);
 private:
-    float m_kp{0.2f} , m_ki{0.6f} , m_kd{0.4f};
+    float m_kp{0.f} , m_ki{0.f} , m_kd{0.f};
     float m_integralPrev{0.f} , m_errorPrev{0.f};
 };
 
@@ -21,7 +26,7 @@ class AltitudeController : public Control
     friend class FlightControl;
 public:
     AltitudeController();
-    float control(ReceiveCommand& command ,float pressure , uint32_t elapsedTimeLastAltitudeMeasurement);
+    float control(float desiredAltitude ,float pressure , uint32_t elapsedTimeLastAltitudeMeasurement);
     void resetValues(float throttle , float altitude);
     virtual void setFirstTime(float throttle , float Altitude) override;
     virtual void setFinishTime() override;

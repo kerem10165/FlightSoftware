@@ -1,6 +1,7 @@
 #include <FlightControl/AltitudeController.h>
 #include <AltitudeComputer/AltitudeComputer.h>
 #include <Communication/SendCommand.h>
+#include <Communication/ReceiveCommand.h>
 #include <limits>
 
 const int AltitudeController::verticalReadCount = 25;
@@ -13,15 +14,15 @@ AltitudeController::AltitudeController()
 
 }
 
-float AltitudeController::control(ReceiveCommand& command ,float pressure , uint32_t elapsedTimeLastAltitudeMeasurement)
+float AltitudeController::control(float desiredAltitude ,float pressure , uint32_t elapsedTimeLastAltitudeMeasurement)
 {
     auto altitude = pressureToAltitude(pressure);
 
     if(elapsedTimeLastAltitudeMeasurement != std::numeric_limits<uint32_t>::max())
     {
-        auto change = (altitude - m_lastAltitude) / (elapsedTimeLastAltitudeMeasurement / 1000.f);
-        m_accumuleteVerticalSpeed += change;
-        m_verticalSpeeds.push(change);
+        auto verticalSpeed = (altitude - m_lastAltitude) / (elapsedTimeLastAltitudeMeasurement / 1000.f);
+        m_accumuleteVerticalSpeed += verticalSpeed;
+        m_verticalSpeeds.push(verticalSpeed);
         m_accumuleteVerticalSpeed -= m_verticalSpeeds.front();
         m_verticalSpeeds.pop();
         m_lastAltitude = altitude;
@@ -30,7 +31,7 @@ float AltitudeController::control(ReceiveCommand& command ,float pressure , uint
     auto verticalSpeed = (m_accumuleteVerticalSpeed / verticalReadCount) * 100; 
     verticalSpeed = constrain(verticalSpeed , -1000 , 1000);
     
-    float thro_pid = m_pid.pid(command.altitude * 100 , altitude *100.f , verticalSpeed);
+    float thro_pid = m_pid.pid(desiredAltitude * 100 , altitude *100.f , verticalSpeed);
     auto newThro = m_throttle + thro_pid;
     newThro = constrain(newThro , 1200 , 1750);
 
@@ -66,11 +67,31 @@ void AltitudeController::setFinishTime()
     m_countOfReset = 0;
 }
 
+AltitudePid::AltitudePid(AltitudePid&& other)
+{
+    m_integralPrev = 0.f;
+    m_errorPrev = 0.f;
+}
+
+AltitudePid& AltitudePid::operator=(AltitudePid&& other)
+{
+    m_integralPrev = 0.f;
+    m_errorPrev = 0.f;
+    return *this;
+}
+
+
+void AltitudePid::setPidParams(float p , float i , float d)
+{
+    m_kp = p;
+    m_ki = i;
+    m_kd = d;
+}
 
 float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
 {
     float error = desiredAltitude - altitude;
-
+    
     float pid_error_gain_altitude = 0;
     if (error > 100 || error < -100) 
     {
@@ -91,14 +112,12 @@ float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
     derivative = constrain(derivative , -80 , 125);
     m_errorPrev = error;
 
-
     debugValues.altitude = altitude;
     debugValues.desired_altitude = desiredAltitude;
     debugValues.p_gain_alt = pid_error_gain_altitude;
     debugValues.P_alt = proportional;  
     debugValues.I_alt = integral*m_ki;    
     debugValues.D_alt = derivative;    
-
 
     return proportional + integral*m_ki - derivative;
 }
