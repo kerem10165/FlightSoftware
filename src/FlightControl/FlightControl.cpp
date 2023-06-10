@@ -40,7 +40,7 @@ void FlightControl::control(ReceiveCommand& command, const ImuData& rawImuData ,
 
             else
             {
-                m_alitutdeControl.resetValues(1320 , pressureToAltitude(pressure));
+                m_alitutdeControl.resetValues(1380 , pressureToAltitude(pressure));
                 driveEngines(1000 , *input , RPY{0.f , 0.f , 0.f});
             }
 
@@ -77,7 +77,7 @@ bool FlightControl::updateLastThrottleAndControlOwner(ReceiveCommand& command , 
     if(!m_throttle_has_setted)
     {
         m_last_throttle = throttle;
-        controller.setFirstTime(1320 , altitude);
+        controller.setFirstTime(1380 , altitude);
         count = 0;
         m_throttle_has_setted = true;
     }

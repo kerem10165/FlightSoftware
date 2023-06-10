@@ -33,7 +33,7 @@ float AltitudeController::control(float desiredAltitude ,float pressure , uint32
     
     float thro_pid = m_pid.pid(desiredAltitude * 100 , altitude *100.f , verticalSpeed);
     auto newThro = m_throttle + thro_pid;
-    newThro = constrain(newThro , 1200 , 1750);
+    newThro = constrain(newThro , 1250 , 1750);
 
     return newThro;
 }
@@ -93,11 +93,11 @@ float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
     float error = desiredAltitude - altitude;
     
     float pid_error_gain_altitude = 0;
-    if (error > 100 || error < -100) 
+    if (error > 150 || error < -150) 
     {
-        pid_error_gain_altitude = (abs(error) - 100) / 350.0;
-        if (pid_error_gain_altitude > 0.6f)
-            pid_error_gain_altitude = 0.6f;
+        pid_error_gain_altitude = (abs(error) - 150) / 350.0;
+        if (pid_error_gain_altitude > 0.4f)
+            pid_error_gain_altitude = 0.4f;
     }
 
     float proportional = error * (m_kp + pid_error_gain_altitude);
@@ -109,7 +109,7 @@ float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
     m_integralPrev = integral;
 
     float derivative = velocity * m_kd;
-    derivative = constrain(derivative , -80 , 125);
+    derivative = constrain(derivative , -150 , 125);
     m_errorPrev = error;
 
     debugValues.altitude = altitude;
@@ -121,3 +121,4 @@ float AltitudePid::pid(float desiredAltitude , float altitude , float velocity)
 
     return proportional + integral*m_ki - derivative;
 }
+

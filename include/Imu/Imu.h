@@ -23,8 +23,8 @@ private:
     ImuData m_mpuRawData{};
     ImuData m_mpuMotionData{};
     float B_madgwick = 0.04;
-    float B_accel = 0.14f;
-    float B_gyro = 0.093f;
+    float B_accel = 0.13f;
+    float B_gyro = 0.095f;
 
     float q0 = 1.0f;
     float q1 = 0.0f;

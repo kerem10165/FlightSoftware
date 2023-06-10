@@ -7,6 +7,7 @@
 #include <Communication/ReceiveCommand.h>
 #include <Communication/SendCommand.h>
 #include <Settings/QuadSettings.h>
+#include <Gps/Gps.h>
 
 float dt;
 unsigned long current_time, prev_time , time_counter;
@@ -19,6 +20,7 @@ TransferData* transferData;
 ReceiveCommand command{Command::fly_joyistick , 0 , 0.f , 0.f};
 QuadSettings* quadSettings;
 ReceiveData * recevieData;
+Gps* gps;
 
 void loopRate(int freq) 
 {
@@ -30,6 +32,7 @@ void loopRate(int freq)
     checker = micros();
   }
 }
+
 
 void setup() 
 {
@@ -45,6 +48,7 @@ void setup()
   transferData = new TransferData;
   quadSettings = new QuadSettings{flightControl};
   recevieData = new ReceiveData{quadSettings , command};
+  gps = new Gps;
 
   //if you want to write into eeprom from in hardcoded pid values you have to comment this section
   quadSettings->getValuesFromEepromAndSetup();
@@ -62,7 +66,6 @@ void setup()
   flightControl->armEngine();
   
   command.command = Command::fly_joyistick;
-
 }
 
 uint32_t start , end , count , totalCount;
@@ -91,7 +94,7 @@ void loop()
   end = millis();
   if(end - start > 1000)
   {
-    // Serial.printf("Count Main : %d\n" , count);
+    Serial.printf("Count Main : %d\n" , count);
     totalCount = count;
     count = 0;
     start = end;
@@ -101,7 +104,7 @@ void loop()
   
   recevieData->receiveDatas();
 
-  transferData->transferData(angles , altitudeFromGroundLevel * 100 , command.command , 
+  transferData->transferData(angles , altitudeFromGroundLevel * 100 , command.command , *gps,
   totalCount , *quadSettings);
 
   loopRate(2028);

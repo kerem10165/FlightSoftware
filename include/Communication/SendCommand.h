@@ -5,6 +5,7 @@
 #include <EasyTransfer.h>
 #include <Imu/ImuDefinitions.h>
 #include <Settings/QuadSettings.h>
+#include <Gps/Gps.h>
 
 enum class SendType : int
 {
@@ -60,12 +61,12 @@ struct SendInformations
     SendInformation data{};
 };
 
-
 class TransferData
 {
 public:
     TransferData();
-    void transferData(const RPY& angles , int altitude , Command status , int countOfLoop , const QuadSettings& settings);
+    void transferData(const RPY& angles , int altitude , Command status , Gps& gps  
+                                , int countOfLoop , const QuadSettings& settings);
 private:
     EasyTransfer m_transfer;
     SendInformations m_infos;

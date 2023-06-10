@@ -12,7 +12,7 @@ class AttitudeControlPid
         Yaw = 2
     };
 public:
-    AttitudeControlPid(const RPY& kp = RPY{} , const RPY& ki = RPY{} , const RPY& kd = RPY{} , float integralLimit = 30.f);
+    AttitudeControlPid(const RPY& kp = RPY{} , const RPY& ki = RPY{} , const RPY& kd = RPY{} , float integralLimit = 27.5f);
     void setPidParams(const RPY& p , const RPY& i , const RPY& d);
     RPY getPid(const RPY &angels , const ImuData& rawImuData , const RPY &desiredAngles, float dt , float throttle);
 private:

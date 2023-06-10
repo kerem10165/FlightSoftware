@@ -11,8 +11,8 @@ EngineControl::EngineControl(int frontLeftEnginePin , int frontRightEnginePin , 
 
 void EngineControl::driveEngines(float throttle , const RPY& rpyPid)
 {
-    if(throttle > 1750) 
-        throttle = 1750;
+    if(throttle > 1875) 
+        throttle = 1875;
 
     throttle -= 1000.f;
     throttle = (throttle / 1000.f)*180;

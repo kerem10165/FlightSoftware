@@ -6,7 +6,7 @@ Imu::Imu(const ImuData& errorOfImu)
     :mpu6050{MPU6050{}} ,m_errorOfImu{errorOfImu}
 {
     mpu6050.initialize();
-    
+    mpu6050.setDLPFMode(2);
     if (mpu6050.testConnection() == false) 
     {
       while(1) 

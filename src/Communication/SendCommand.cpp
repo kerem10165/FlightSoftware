@@ -1,5 +1,6 @@
 #include <Communication/SendCommand.h>
 
+
 DebugValues debugValues;
 
 
@@ -8,9 +9,12 @@ TransferData::TransferData()
     m_transfer.begin(details(m_infos), &Serial1);
 }
 
-void TransferData::transferData(const RPY& angles , int altitude , Command status , int countOfLoop , const QuadSettings& settings)
+void TransferData::transferData(const RPY& angles , int altitude , Command status , Gps& gps  
+                                , int countOfLoop , const QuadSettings& settings)
 {
     auto currentSend = millis();
+    auto locations = gps.getCoordinate();
+    auto satelliteCount = gps.getSatelliteCount();
     if(currentSend - m_lastSend >= 100)
     {
         if(count < 10)
@@ -22,7 +26,13 @@ void TransferData::transferData(const RPY& angles , int altitude , Command statu
             m_infos.data.status.yaw = angles.Yaw;
             m_infos.data.status.debug = debugValues;
             m_infos.data.status.debug.countOfLoop = countOfLoop;
+            
+            m_infos.data.status.latitude = locations.first;
+            m_infos.data.status.longtitude = locations.second;
+            m_infos.data.status.satelliteCount = satelliteCount;
+            
             m_infos.sendType = SendType::Info;
+            
 
             count++;
         }
